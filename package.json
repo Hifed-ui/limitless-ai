@@ -1,0 +1,11 @@
+{
+  "name": "limitless-ai",
+  "version": "1.0.0",
+  "description": "Limitless AI - ChatGPT-style assistant",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "openai": "^4.0.0"
+  }
+}
