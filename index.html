@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Limitless AI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#05050a;
+  --surface:#0d0d14;
+  --surface2:#13131e;
+  --border:rgba(255,255,255,0.07);
+  --border-mid:rgba(255,255,255,0.13);
+  --accent:#4eff7a;
+  --accent-dim:rgba(78,255,122,0.1);
+  --accent-border:rgba(78,255,122,0.25);
+  --text:#f0eff8;
+  --muted:#5e5d78;
+  --muted2:#9190aa;
+  --user-bubble:#161622;
+  --ai-bubble:#0d0d14;
+  --sidebar-w:260px;
+}
+
+html,body{height:100%;overflow:hidden}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Manrope',sans-serif;
+  display:flex;
+  font-size:15px;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  overflow:hidden;
+}
+
+.sidebar-top{
+  padding:1.2rem 1rem 0.8rem;
+  border-bottom:1px solid var(--border);
+}
+
+.logo{
+  display:flex;align-items:center;gap:10px;
+  text-decoration:none;color:var(--text);
+  margin-bottom:1rem;
+}
+.logo-icon{
+  width:32px;height:32px;
+  background:var(--accent-dim);
+  border:1px solid var(--accent-border);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+}
+.logo-icon svg{width:16px;height:16px}
+.logo-name{
+  font-family:'DM Mono',monospace;
+  font-size:0.95rem;font-weight:500;
+}
+.logo-name em{color:var(--accent);font-style:normal}
+
+.new-chat-btn{
+  display:flex;align-items:center;gap:8px;
+  width:100%;
+  background:transparent;
+  border:1px solid var(--border-mid);
+  border-radius:8px;
+  padding:0.6rem 0.9rem;
+  color:var(--muted2);
+  font-family:'Manrope',sans-serif;
+  font-size:0.82rem;font-weight:600;
+  cursor:pointer;
+  transition:background 0.15s,border-color 0.15s,color 0.15s;
+  text-align:left;
+}
+.new-chat-btn:hover{background:var(--surface2);border-color:var(--border-mid);color:var(--text)}
+.new-chat-btn svg{width:15px;height:15px;flex-shrink:0}
+
+.sidebar-history{
+  flex:1;overflow-y:auto;padding:0.8rem 0.6rem;
+}
+.sidebar-history::-webkit-scrollbar{width:4px}
+.sidebar-history::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:2px}
+
+.history-label{
+  font-size:0.7rem;
+  font-family:'DM Mono',monospace;
+  color:var(--muted);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  padding:0.4rem 0.5rem 0.6rem;
+}
+
+.history-item{
+  padding:0.55rem 0.8rem;
+  border-radius:7px;
+  cursor:pointer;
+  font-size:0.82rem;
+  color:var(--muted2);
+  transition:background 0.15s,color 0.15s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.history-item:hover{background:var(--surface2);color:var(--text)}
+.history-item.active{background:var(--accent-dim);color:var(--text)}
+
+.sidebar-bottom{
+  padding:0.8rem;
+  border-top:1px solid var(--border);
+}
+.sidebar-model{
+  display:flex;align-items:center;gap:8px;
+  padding:0.6rem 0.8rem;
+  border-radius:8px;
+  font-size:0.78rem;
+  color:var(--muted2);
+  background:var(--surface2);
+  border:1px solid var(--border);
+}
+.model-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── MAIN ── */
+.main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ── MESSAGES ── */
+.messages{
+  flex:1;
+  overflow-y:auto;
+  padding:2rem 0;
+  scroll-behavior:smooth;
+}
+.messages::-webkit-scrollbar{width:5px}
+.messages::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:3px}
+
+/* EMPTY STATE */
+.empty-state{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  text-align:center;
+  padding:2rem;
+  gap:1.5rem;
+}
+.empty-icon{
+  width:56px;height:56px;
+  background:var(--accent-dim);
+  border:1px solid var(--accent-border);
+  border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+}
+.empty-icon svg{width:26px;height:26px}
+.empty-state h2{
+  font-size:1.5rem;font-weight:800;letter-spacing:-0.5px;
+}
+.empty-state p{color:var(--muted2);font-size:0.9rem;max-width:360px;line-height:1.6}
+
+.suggestions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0.75rem;
+  max-width:520px;
+  width:100%;
+}
+.suggestion{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:0.85rem 1rem;
+  font-size:0.82rem;
+  color:var(--muted2);
+  cursor:pointer;
+  text-align:left;
+  transition:background 0.15s,border-color 0.15s,color 0.15s;
+  font-family:'Manrope',sans-serif;
+  line-height:1.5;
+}
+.suggestion:hover{background:var(--surface2);border-color:var(--accent-border);color:var(--text)}
+.suggestion strong{display:block;color:var(--text);font-size:0.8rem;margin-bottom:3px}
+
+/* MESSAGE ROWS */
+.msg-row{
+  max-width:760px;
+  margin:0 auto;
+  padding:0.6rem 2rem;
+  display:flex;
+  gap:1rem;
+  align-items:flex-start;
+}
+
+.msg-avatar{
+  width:30px;height:30px;min-width:30px;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.68rem;font-weight:700;
+  margin-top:3px;
+  flex-shrink:0;
+}
+.msg-avatar.ai{
+  background:var(--accent-dim);
+  border:1px solid var(--accent-border);
+  color:var(--accent);
+  font-family:'DM Mono',monospace;
+}
+.msg-avatar.user{
+  background:var(--surface2);
+  border:1px solid var(--border-mid);
+  color:var(--muted2);
+  font-family:'DM Mono',monospace;
+}
+
+.msg-content{
+  flex:1;
+  font-size:0.92rem;
+  line-height:1.75;
+  color:var(--text);
+  min-width:0;
+}
+.msg-content.user-content{color:var(--text)}
+.msg-content p{margin-bottom:0.7rem}
+.msg-content p:last-child{margin-bottom:0}
+
+/* markdown-ish styling */
+.msg-content strong{font-weight:700;color:var(--text)}
+.msg-content code{
+  background:var(--surface2);
+  border:1px solid var(--border-mid);
+  border-radius:4px;
+  padding:1px 6px;
+  font-family:'DM Mono',monospace;
+  font-size:0.82rem;
+  color:var(--accent);
+}
+.msg-content pre{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1.2rem;
+  overflow-x:auto;
+  margin:0.8rem 0;
+}
+.msg-content pre code{
+  background:none;border:none;padding:0;
+  font-size:0.82rem;color:var(--muted2);
+}
+.msg-content ul,.msg-content ol{
+  padding-left:1.4rem;margin:0.5rem 0;
+}
+.msg-content li{margin-bottom:0.3rem}
+.msg-content h1,.msg-content h2,.msg-content h3{
+  font-weight:700;margin:1rem 0 0.4rem;
+  letter-spacing:-0.3px;
+}
+.msg-content h1{font-size:1.2rem}
+.msg-content h2{font-size:1.05rem}
+.msg-content h3{font-size:0.95rem}
+
+/* TYPING INDICATOR */
+.typing-indicator{
+  display:flex;gap:5px;align-items:center;padding:4px 0;
+}
+.typing-indicator span{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--muted);
+  animation:bounce 1.2s ease-in-out infinite;
+}
+.typing-indicator span:nth-child(2){animation-delay:0.15s}
+.typing-indicator span:nth-child(3){animation-delay:0.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* ── INPUT AREA ── */
+.input-area{
+  padding:1rem 1.5rem 1.5rem;
+  background:linear-gradient(to top,var(--bg) 80%,transparent);
+}
+
+.input-box{
+  max-width:760px;
+  margin:0 auto;
+  background:var(--surface);
+  border:1px solid var(--border-mid);
+  border-radius:14px;
+  display:flex;
+  align-items:flex-end;
+  gap:0.5rem;
+  padding:0.75rem 0.75rem 0.75rem 1.1rem;
+  transition:border-color 0.2s;
+}
+.input-box:focus-within{border-color:var(--accent-border)}
+
+#user-input{
+  flex:1;
+  background:transparent;
+  border:none;
+  outline:none;
+  color:var(--text);
+  font-family:'Manrope',sans-serif;
+  font-size:0.9rem;
+  line-height:1.6;
+  resize:none;
+  max-height:180px;
+  min-height:24px;
+  overflow-y:auto;
+}
+#user-input::placeholder{color:var(--muted)}
+#user-input::-webkit-scrollbar{width:3px}
+#user-input::-webkit-scrollbar-thumb{background:var(--border-mid)}
+
+#send-btn{
+  width:36px;height:36px;min-width:36px;
+  background:var(--accent);
+  border:none;
+  border-radius:9px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity 0.15s,transform 0.1s;
+  flex-shrink:0;
+}
+#send-btn:hover{opacity:0.88;transform:scale(1.04)}
+#send-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none}
+#send-btn svg{width:16px;height:16px}
+
+.input-hint{
+  text-align:center;
+  font-size:0.7rem;
+  color:var(--muted);
+  margin-top:0.6rem;
+  font-family:'DM Mono',monospace;
+}
+
+/* ── MOBILE SIDEBAR TOGGLE ── */
+.mobile-toggle{
+  display:none;
+  position:fixed;top:1rem;left:1rem;z-index:200;
+  background:var(--surface);
+  border:1px solid var(--border-mid);
+  border-radius:8px;
+  width:38px;height:38px;
+  align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.mobile-toggle svg{width:18px;height:18px}
+
+@media(max-width:700px){
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;z-index:150;
+    transform:translateX(-100%);
+    transition:transform 0.25s ease;
+  }
+  .sidebar.open{transform:translateX(0)}
+  .mobile-toggle{display:flex}
+  .msg-row{padding:0.6rem 1.2rem}
+  .suggestions{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile toggle -->
+<button class="mobile-toggle" id="mob-toggle" aria-label="Open menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/>
+  </svg>
+</button>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <a class="logo" href="#">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#4eff7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="logo-name">Limitless<em>AI</em></span>
+    </a>
+    <button class="new-chat-btn" id="new-chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New conversation
+    </button>
+  </div>
+
+  <div class="sidebar-history" id="history-list">
+    <div class="history-label">Recent</div>
+    <!-- filled by JS -->
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-model">
+      <span class="model-dot"></span>
+      GPT-4o mini · Ready
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="messages" id="messages">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#4eff7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <h2>What can I help with?</h2>
+        <p>Ask me anything — writing, research, code, strategy, client emails, pricing, or just thinking something through.</p>
+      </div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="fillPrompt(this)">
+          <strong>Write something</strong>Draft a cold outreach email for a new client
+        </button>
+        <button class="suggestion" onclick="fillPrompt(this)">
+          <strong>Explain a concept</strong>What's the difference between LLC and sole trader?
+        </button>
+        <button class="suggestion" onclick="fillPrompt(this)">
+          <strong>Help with code</strong>Fix this JavaScript function for me
+        </button>
+        <button class="suggestion" onclick="fillPrompt(this)">
+          <strong>Freelance advice</strong>How do I raise my rates without losing clients?
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-box">
+      <textarea id="user-input" placeholder="Ask anything…" rows="1"></textarea>
+      <button id="send-btn" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 12h14M12 5l7 7-7 7" stroke="#05050a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <p class="input-hint">Limitless AI can make mistakes. Verify important info.</p>
+  </div>
+</main>
+
+<script>
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const emptyState = document.getElementById('empty-state');
+const historyList = document.getElementById('history-list');
+
+let conversationHistory = [];
+let sessions = JSON.parse(localStorage.getItem('lai_sessions') || '[]');
+let currentSessionId = null;
+
+// ── AUTO-RESIZE TEXTAREA ──
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 180) + 'px';
+});
+
+// ── SEND ON ENTER (shift+enter = newline) ──
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+// ── FILL PROMPT FROM SUGGESTION ──
+function fillPrompt(btn) {
+  const text = btn.querySelector('p') ? btn.querySelector('p').textContent : btn.lastChild.textContent.trim();
+  inputEl.value = text;
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 180) + 'px';
+  inputEl.focus();
+}
+
+// ── SIMPLE MARKDOWN RENDERER ──
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/^\* (.+)$/gm, '<li>$1</li>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hupol]|<pre)(.+)$/gm, '$1')
+    .replace(/^(.)/m, m => m.match(/^</) ? m : `<p>${m}`)
+    .replace(/([^>])$/, '$1</p>');
+}
+
+// ── ADD MESSAGE TO UI ──
+function addMessage(role, content) {
+  if (emptyState) emptyState.style.display = 'none';
+
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = `msg-avatar ${role}`;
+  avatar.textContent = role === 'ai' ? 'AI' : 'You';
+
+  const contentEl = document.createElement('div');
+  contentEl.className = `msg-content ${role === 'user' ? 'user-content' : ''}`;
+
+  if (role === 'user') {
+    contentEl.innerHTML = `<p>${content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</p>`;
+  } else {
+    contentEl.innerHTML = renderMarkdown(content);
+  }
+
+  row.appendChild(avatar);
+  row.appendChild(contentEl);
+  messagesEl.appendChild(row);
+  scrollToBottom();
+  return contentEl;
+}
+
+// ── TYPING INDICATOR ──
+function addTypingIndicator() {
+  if (emptyState) emptyState.style.display = 'none';
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.id = 'typing-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar ai';
+  avatar.textContent = 'AI';
+
+  const ind = document.createElement('div');
+  ind.className = 'typing-indicator';
+  ind.innerHTML = '<span></span><span></span><span></span>';
+
+  row.appendChild(avatar);
+  row.appendChild(ind);
+  messagesEl.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+function removeTypingIndicator() {
+  const t = document.getElementById('typing-row');
+  if (t) t.remove();
+}
+
+function scrollToBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ── SEND MESSAGE ──
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text || sendBtn.disabled) return;
+
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  conversationHistory.push({ role: 'user', content: text });
+  addMessage('user', text);
+
+  const typingRow = addTypingIndicator();
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: conversationHistory }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Request failed');
+    }
+
+    removeTypingIndicator();
+
+    // streaming
+    const contentType = response.headers.get('content-type') || '';
+    let fullText = '';
+
+    if (contentType.includes('text/event-stream')) {
+      const contentEl = addMessage('ai', '');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                fullText += parsed.content;
+                contentEl.innerHTML = renderMarkdown(fullText);
+                scrollToBottom();
+              }
+            } catch {}
+          }
+        }
+      }
+    } else {
+      const data = await response.json();
+      fullText = data.content || '';
+      addMessage('ai', fullText);
+    }
+
+    conversationHistory.push({ role: 'assistant', content: fullText });
+    saveSession(text);
+
+  } catch (err) {
+    removeTypingIndicator();
+    addMessage('ai', `**Error:** ${err.message}\n\nMake sure your \`OPENAI_API_KEY\` environment variable is set in Vercel.`);
+  }
+
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+// ── SESSION MANAGEMENT ──
+function saveSession(firstMessage) {
+  if (!currentSessionId) {
+    currentSessionId = Date.now().toString();
+    const title = firstMessage.length > 45 ? firstMessage.slice(0, 45) + '…' : firstMessage;
+    sessions.unshift({ id: currentSessionId, title, history: conversationHistory });
+    if (sessions.length > 30) sessions = sessions.slice(0, 30);
+  } else {
+    const s = sessions.find(s => s.id === currentSessionId);
+    if (s) s.history = conversationHistory;
+  }
+  localStorage.setItem('lai_sessions', JSON.stringify(sessions));
+  renderHistory();
+}
+
+function renderHistory() {
+  const label = historyList.querySelector('.history-label');
+  historyList.innerHTML = '';
+  if (label) historyList.appendChild(label);
+  else {
+    const l = document.createElement('div');
+    l.className = 'history-label';
+    l.textContent = 'Recent';
+    historyList.appendChild(l);
+  }
+  sessions.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'history-item' + (s.id === currentSessionId ? ' active' : '');
+    item.textContent = s.title;
+    item.onclick = () => loadSession(s.id);
+    historyList.appendChild(item);
+  });
+}
+
+function loadSession(id) {
+  const s = sessions.find(s => s.id === id);
+  if (!s) return;
+  currentSessionId = id;
+  conversationHistory = [...s.history];
+  messagesEl.innerHTML = '';
+
+  // rebuild messages
+  let emptyDiv = document.createElement('div');
+  emptyDiv.id = 'empty-state';
+  emptyDiv.style.display = 'none';
+  messagesEl.appendChild(emptyDiv);
+
+  for (let i = 0; i < conversationHistory.length; i++) {
+    const m = conversationHistory[i];
+    addMessage(m.role === 'user' ? 'user' : 'ai', m.content);
+  }
+  renderHistory();
+}
+
+document.getElementById('new-chat').addEventListener('click', () => {
+  currentSessionId = null;
+  conversationHistory = [];
+  messagesEl.innerHTML = '';
+  // restore empty state
+  const es = document.createElement('div');
+  es.className = 'empty-state';
+  es.id = 'empty-state';
+  es.innerHTML = `
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#4eff7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div><h2>What can I help with?</h2><p>Ask me anything — writing, research, code, strategy, client emails, pricing, or just thinking something through.</p></div>
+    <div class="suggestions">
+      <button class="suggestion" onclick="fillPrompt(this)"><strong>Write something</strong>Draft a cold outreach email for a new client</button>
+      <button class="suggestion" onclick="fillPrompt(this)"><strong>Explain a concept</strong>What's the difference between LLC and sole trader?</button>
+      <button class="suggestion" onclick="fillPrompt(this)"><strong>Help with code</strong>Fix this JavaScript function for me</button>
+      <button class="suggestion" onclick="fillPrompt(this)"><strong>Freelance advice</strong>How do I raise my rates without losing clients?</button>
+    </div>`;
+  messagesEl.appendChild(es);
+  renderHistory();
+});
+
+// mobile sidebar
+document.getElementById('mob-toggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+// init
+renderHistory();
+</script>
+</body>
+</html>
