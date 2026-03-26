@@ -1,9 +1,3 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -15,36 +9,41 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "messages array is required" });
   }
 
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(500).json({ error: "OPENAI_API_KEY is not set in Vercel environment variables." });
+  }
+
   try {
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are Limitless AI, a smart and helpful assistant for freelancers and professionals. You give clear, direct, and practical answers. You are friendly but concise. You help with any question — writing, strategy, client communication, pricing, contracts, coding, research, and more.",
-        },
-        ...messages,
-      ],
-      max_tokens: 1000,
-      stream: true,
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are Limitless AI, a smart and helpful assistant. You give clear, direct, and practical answers. You help with any question — writing, strategy, communication, coding, research, and more.",
+          },
+          ...messages,
+        ],
+        max_tokens: 1000,
+      }),
     });
 
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
+    const data = await response.json();
 
-    for await (const chunk of completion) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
-      }
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.error?.message || "OpenAI request failed" });
     }
 
-    res.write("data: [DONE]\n\n");
-    res.end();
+    const content = data.choices?.[0]?.message?.content || "";
+    return res.status(200).json({ content });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Something went wrong. Check your OpenAI API key." });
+    return res.status(500).json({ error: "Server error: " + err.message });
   }
 }
